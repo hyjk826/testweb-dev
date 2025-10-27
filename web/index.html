@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네온 Pong 🏓</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            overflow: hidden;
+        }
+
+        .game-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: #00fff7;
+            text-shadow: 0 0 20px #00fff7, 0 0 40px #00fff7;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .game-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 50px rgba(0, 255, 247, 0.3);
+        }
+
+        #gameCanvas {
+            border: 3px solid #00fff7;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 247, 0.5),
+                        inset 0 0 30px rgba(0, 255, 247, 0.1);
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 255, 247, 0.1);
+            border-radius: 10px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-item h3 {
+            font-size: 14px;
+            color: #00fff7;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .score-item p {
+            font-size: 36px;
+            color: #ffffff;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00fff7;
+        }
+
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            color: #00fff7;
+            background: rgba(0, 255, 247, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .controls h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+            letter-spacing: 2px;
+        }
+
+        .controls p {
+            font-size: 12px;
+            line-height: 1.8;
+            opacity: 0.8;
+        }
+
+        .menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #00fff7;
+            box-shadow: 0 0 50px rgba(0, 255, 247, 0.5);
+            z-index: 1000;
+        }
+
+        .menu h2 {
+            font-size: 32px;
+            color: #00fff7;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px #00fff7;
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .menu-btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #00fff7 0%, #00a8a3 100%);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 247, 0.8);
+        }
+
+        .menu-btn.secondary {
+            background: linear-gradient(135deg, #ff006e 0%, #a8003e 100%);
+        }
+
+        .game-over {
+            display: none;
+        }
+
+        .winner-text {
+            font-size: 24px;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .difficulty-selector {
+            margin: 20px 0;
+        }
+
+        .difficulty-btn {
+            padding: 10px 20px;
+            margin: 0 5px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 255, 247, 0.2);
+            color: #00fff7;
+            border: 2px solid #00fff7;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .difficulty-btn:hover,
+        .difficulty-btn.active {
+            background: #00fff7;
+            color: #000;
+        }
+
+        .powerup-info {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00fff7;
+            font-size: 14px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .powerup-info.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="game-title">⚡ NEON PONG ⚡</h1>
+
+    <div class="menu" id="mainMenu">
+        <h2>게임 모드 선택</h2>
+        <div class="difficulty-selector">
+            <p style="color: #00fff7; margin-bottom: 10px;">AI 난이도:</p>
+            <button class="difficulty-btn active" data-difficulty="easy">쉬움</button>
+            <button class="difficulty-btn" data-difficulty="medium">보통</button>
+            <button class="difficulty-btn" data-difficulty="hard">어려움</button>
+            <button class="difficulty-btn" data-difficulty="impossible">불가능</button>
+        </div>
+        <div class="menu-buttons">
+            <button class="menu-btn" onclick="startGame('ai')">🤖 AI와 대결</button>
+            <button class="menu-btn" onclick="startGame('2player')">👥 2인 대전</button>
+        </div>
+    </div>
+
+    <div class="menu game-over" id="gameOverMenu">
+        <h2>게임 종료!</h2>
+        <p class="winner-text" id="winnerText"></p>
+        <div class="menu-buttons">
+            <button class="menu-btn" onclick="restartGame()">다시 하기</button>
+            <button class="menu-btn secondary" onclick="backToMenu()">메뉴로</button>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <div class="powerup-info" id="powerupInfo"></div>
+        <div class="score-board">
+            <div class="score-item">
+                <h3>플레이어 1</h3>
+                <p id="score1">0</p>
+            </div>
+            <div class="score-item">
+                <h3 id="player2Name">플레이어 2</h3>
+                <p id="score2">0</p>
+            </div>
+        </div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div class="controls">
+            <h3>조작법</h3>
+            <p>플레이어 1: W / S 키로 상하 이동</p>
+            <p id="player2Controls">플레이어 2: ↑ / ↓ 키로 상하 이동</p>
+            <p>Space: 일시정지 | 목표: 먼저 11점 득점!</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 게임 상태
+        let gameMode = null;
+        let aiDifficulty = 'easy';
+        let gameRunning = false;
+        let paused = false;
+        let animationId = null;
+
+        // 파티클 효과
+        let particles = [];
+
+        // 파워업
+        let powerups = [];
+        let powerupTimer = 0;
+
+        // 게임 객체
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 8,
+            speedX: 5,
+            speedY: 5,
+            maxSpeed: 15,
+            trailPositions: []
+        };
+
+        const paddle1 = {
+            x: 20,
+            y: canvas.height / 2 - 50,
+            width: 10,
+            height: 100,
+            speed: 0,
+            maxSpeed: 8,
+            score: 0
+        };
+
+        const paddle2 = {
+            x: canvas.width - 30,
+            y: canvas.height / 2 - 50,
+            width: 10,
+            height: 100,
+            speed: 0,
+            maxSpeed: 8,
+            score: 0
+        };
+
+        // 키 입력
+        const keys = {};
+
+        // 난이도 설정
+        const difficultySettings = {
+            easy: { speed: 0.3, reaction: 0.1 },
+            medium: { speed: 0.5, reaction: 0.15 },
+            hard: { speed: 0.7, reaction: 0.2 },
+            impossible: { speed: 1, reaction: 1 }
+        };
+
+        // 난이도 선택
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                aiDifficulty = e.target.dataset.difficulty;
+            });
+        });
+
+        // 파티클 클래스
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.life = 1;
+                this.color = color;
+                this.size = Math.random() * 3 + 2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.02;
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+            }
+
+            draw() {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // 파워업 클래스
+        class Powerup {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 100) + 50;
+                this.y = Math.random() * (canvas.height - 100) + 50;
+                this.radius = 15;
+                this.type = ['speed', 'size', 'multiball'][Math.floor(Math.random() * 3)];
+                this.rotation = 0;
+                this.color = this.type === 'speed' ? '#ff006e' : 
+                             this.type === 'size' ? '#00fff7' : '#ffbe0b';
+            }
+
+            update() {
+                this.rotation += 0.05;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                
+                // 외곽 글로우
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                
+                // 파워업 아이콘
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const icon = this.type === 'speed' ? '⚡' : 
+                            this.type === 'size' ? '📏' : '✨';
+                ctx.fillText(icon, 0, 0);
+                
+                ctx.restore();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function createParticles(x, y, color, count = 20) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function showPowerupInfo(text) {
+            const info = document.getElementById('powerupInfo');
+            info.textContent = text;
+            info.classList.add('show');
+            setTimeout(() => info.classList.remove('show'), 2000);
+        }
+
+        function startGame(mode) {
+            gameMode = mode;
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('gameOverMenu').style.display = 'none';
+            
+            if (mode === 'ai') {
+                document.getElementById('player2Name').textContent = '🤖 AI';
+                document.getElementById('player2Controls').textContent = 'AI가 자동으로 움직입니다';
+            } else {
+                document.getElementById('player2Name').textContent = '플레이어 2';
+                document.getElementById('player2Controls').textContent = '플레이어 2: ↑ / ↓ 키로 상하 이동';
+            }
+            
+            resetGame();
+            gameRunning = true;
+            paused = false;
+            gameLoop();
+        }
+
+        function resetGame() {
+            paddle1.y = canvas.height / 2 - 50;
+            paddle2.y = canvas.height / 2 - 50;
+            paddle1.score = 0;
+            paddle2.score = 0;
+            paddle1.height = 100;
+            paddle2.height = 100;
+            resetBall();
+            particles = [];
+            powerups = [];
+            powerupTimer = 0;
+            updateScore();
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            const angle = (Math.random() - 0.5) * Math.PI / 3;
+            const direction = Math.random() < 0.5 ? 1 : -1;
+            ball.speedX = Math.cos(angle) * 5 * direction;
+            ball.speedY = Math.sin(angle) * 5;
+            ball.trailPositions = [];
+        }
+
+        function updateScore() {
+            document.getElementById('score1').textContent = paddle1.score;
+            document.getElementById('score2').textContent = paddle2.score;
+        }
+
+        function checkWinner() {
+            if (paddle1.score >= 11) {
+                endGame('플레이어 1 승리! 🎉');
+            } else if (paddle2.score >= 11) {
+                const winner = gameMode === 'ai' ? '🤖 AI 승리!' : '플레이어 2 승리! 🎉';
+                endGame(winner);
+            }
+        }
+
+        function endGame(message) {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            document.getElementById('winnerText').textContent = message;
+            document.getElementById('gameOverMenu').style.display = 'block';
+        }
+
+        function restartGame() {
+            startGame(gameMode);
+        }
+
+        function backToMenu() {
+            document.getElementById('gameOverMenu').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+        }
+
+        function drawNet() {
+            ctx.strokeStyle = 'rgba(0, 255, 247, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawPaddle(paddle) {
+            // 글로우 효과
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00fff7';
+            ctx.fillStyle = '#00fff7';
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            ctx.shadowBlur = 0;
+        }
+
+        function drawBall() {
+            // 트레일 효과
+            ball.trailPositions.push({ x: ball.x, y: ball.y });
+            if (ball.trailPositions.length > 10) {
+                ball.trailPositions.shift();
+            }
+
+            ball.trailPositions.forEach((pos, index) => {
+                ctx.globalAlpha = (index / ball.trailPositions.length) * 0.3;
+                ctx.fillStyle = '#00fff7';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            // 공 글로우
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#00fff7';
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function updateBall() {
+            ball.x += ball.speedX;
+            ball.y += ball.speedY;
+
+            // 벽 충돌
+            if (ball.y - ball.radius <= 0 || ball.y + ball.radius >= canvas.height) {
+                ball.speedY = -ball.speedY;
+                createParticles(ball.x, ball.y, '#00fff7', 10);
+            }
+
+            // 패들 충돌
+            if (ball.x - ball.radius <= paddle1.x + paddle1.width &&
+                ball.y >= paddle1.y &&
+                ball.y <= paddle1.y + paddle1.height &&
+                ball.speedX < 0) {
+                
+                ball.speedX = Math.abs(ball.speedX) * 1.1;
+                const hitPos = (ball.y - paddle1.y) / paddle1.height - 0.5;
+                ball.speedY += hitPos * 3;
+                createParticles(ball.x, ball.y, '#00fff7', 15);
+            }
+
+            if (ball.x + ball.radius >= paddle2.x &&
+                ball.y >= paddle2.y &&
+                ball.y <= paddle2.y + paddle2.height &&
+                ball.speedX > 0) {
+                
+                ball.speedX = -Math.abs(ball.speedX) * 1.1;
+                const hitPos = (ball.y - paddle2.y) / paddle2.height - 0.5;
+                ball.speedY += hitPos * 3;
+                createParticles(ball.x, ball.y, '#00fff7', 15);
+            }
+
+            // 속도 제한
+            ball.speedX = Math.max(-ball.maxSpeed, Math.min(ball.maxSpeed, ball.speedX));
+            ball.speedY = Math.max(-ball.maxSpeed, Math.min(ball.maxSpeed, ball.speedY));
+
+            // 득점
+            if (ball.x < 0) {
+                paddle2.score++;
+                updateScore();
+                createParticles(canvas.width / 2, canvas.height / 2, '#ff006e', 50);
+                checkWinner();
+                if (gameRunning) resetBall();
+            } else if (ball.x > canvas.width) {
+                paddle1.score++;
+                updateScore();
+                createParticles(canvas.width / 2, canvas.height / 2, '#00fff7', 50);
+                checkWinner();
+                if (gameRunning) resetBall();
+            }
+
+            // 파워업 충돌
+            powerups = powerups.filter(powerup => {
+                const dist = Math.hypot(ball.x - powerup.x, ball.y - powerup.y);
+                if (dist < ball.radius + powerup.radius) {
+                    activatePowerup(powerup.type);
+                    createParticles(powerup.x, powerup.y, powerup.color, 30);
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function activatePowerup(type) {
+            switch(type) {
+                case 'speed':
+                    ball.speedX *= 1.5;
+                    ball.speedY *= 1.5;
+                    showPowerupInfo('⚡ 공 속도 증가!');
+                    break;
+                case 'size':
+                    paddle1.height = Math.min(paddle1.height + 20, 150);
+                    paddle2.height = Math.min(paddle2.height + 20, 150);
+                    showPowerupInfo('📏 패들 크기 증가!');
+                    setTimeout(() => {
+                        paddle1.height = 100;
+                        paddle2.height = 100;
+                    }, 5000);
+                    break;
+                case 'multiball':
+                    showPowerupInfo('✨ 멀티볼 효과!');
+                    break;
+            }
+        }
+
+        function updatePaddles() {
+            // 플레이어 1
+            if (keys['w'] || keys['W']) {
+                paddle1.speed = -paddle1.maxSpeed;
+            } else if (keys['s'] || keys['S']) {
+                paddle1.speed = paddle1.maxSpeed;
+            } else {
+                paddle1.speed = 0;
+            }
+
+            paddle1.y += paddle1.speed;
+            paddle1.y = Math.max(0, Math.min(canvas.height - paddle1.height, paddle1.y));
+
+            // 플레이어 2 또는 AI
+            if (gameMode === '2player') {
+                if (keys['ArrowUp']) {
+                    paddle2.speed = -paddle2.maxSpeed;
+                } else if (keys['ArrowDown']) {
+                    paddle2.speed = paddle2.maxSpeed;
+                } else {
+                    paddle2.speed = 0;
+                }
+            } else {
+                // AI
+                const settings = difficultySettings[aiDifficulty];
+                const targetY = ball.y - paddle2.height / 2;
+                const diff = targetY - paddle2.y;
+                
+                if (Math.abs(diff) > 5) {
+                    paddle2.speed = Math.sign(diff) * paddle2.maxSpeed * settings.speed;
+                    
+                    if (Math.random() < settings.reaction) {
+                        paddle2.y += paddle2.speed;
+                    }
+                } else {
+                    paddle2.speed = 0;
+                }
+            }
+
+            paddle2.y += paddle2.speed;
+            paddle2.y = Math.max(0, Math.min(canvas.height - paddle2.height, paddle2.y));
+        }
+
+        function updateParticles() {
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+        }
+
+        function updatePowerups() {
+            powerupTimer++;
+            if (powerupTimer > 600 && powerups.length < 1 && Math.random() < 0.01) {
+                powerups.push(new Powerup());
+                powerupTimer = 0;
+            }
+
+            powerups.forEach(p => {
+                p.update();
+                p.draw();
+            });
+        }
+
+        function draw() {
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawNet();
+            drawPaddle(paddle1);
+            drawPaddle(paddle2);
+            drawBall();
+            updateParticles();
+            updatePowerups();
+
+            if (paused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#00fff7';
+                ctx.font = 'bold 48px Courier New';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('일시정지', canvas.width / 2, canvas.height / 2);
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            if (!paused) {
+                updateBall();
+                updatePaddles();
+            }
+
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // 키보드 이벤트
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (gameRunning) {
+                    paused = !paused;
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+    </script>
+</body>
+</html>
