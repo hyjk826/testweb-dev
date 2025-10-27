@@ -60,7 +60,7 @@ jobs:
       uses: peter-evans/repository-dispatch@v2
       with:
         token: ${{ secrets.OPS_REPO_TOKEN }}
-        repository: ${{ github.repository_owner }}/testweb-ops
+        repository: hyjk826/testweb-ops
         event-type: image-updated
         client-payload: |
           {

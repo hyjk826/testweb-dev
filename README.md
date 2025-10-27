@@ -1,6 +1,6 @@
 # TestWeb Dev Repository
 
-이 리포지토리는 testweb 애플리케이션의 소스 코드를 관리합니다. zzz
+이 리포지토리는 testweb 애플리케이션의 소스 코드를 관리합니다. 
 
 ## 구조
 
