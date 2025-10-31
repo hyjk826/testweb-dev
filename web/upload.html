@@ -250,7 +250,11 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:8000/api'; // 실제 환경에서는 환경변수로 관리
+        // API URL: 환경에 따라 자동 감지
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE_URL = isDevelopment 
+            ? 'http://api.example.com/api'  // 개발 환경 (로컬에서는 Ingress 도메인 사용)
+            : 'http://api.example.com/api';  // 프로덕션 환경
         
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
