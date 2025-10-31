@@ -250,11 +250,24 @@
     </div>
 
     <script>
-        // API URL: 환경에 따라 자동 감지
-        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const API_BASE_URL = isDevelopment 
-            ? 'http://api.example.com/api'  // 개발 환경 (로컬에서는 Ingress 도메인 사용)
-            : 'http://api.example.com/api';  // 프로덕션 환경
+        // API URL: 현재 접속한 호스트를 기반으로 동적으로 결정
+        // 백엔드 API는 NodePort 30080으로 노출되므로, 같은 호스트의 30080 포트로 접속
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            
+            // localhost나 127.0.0.1이면 개발 환경으로 간주
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // 로컬 개발: 실제 노드 IP 사용 (또는 localhost:30080 포트 포워딩 사용)
+                return 'http://115.145.175.104:30080/api';
+            }
+            
+            // 프로덕션: 같은 호스트에서 백엔드 NodePort로 접속
+            // 예: http://115.145.175.104:31686 (프론트) → http://115.145.175.104:30080/api (백엔드)
+            return `${protocol}//${hostname}:30080/api`;
+        };
+        
+        const API_BASE_URL = getApiBaseUrl();
         
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
