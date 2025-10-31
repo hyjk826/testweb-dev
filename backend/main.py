@@ -10,7 +10,6 @@ import uuid
 from typing import Optional
 
 load_dotenv()
-
 app = FastAPI(title="Image Upload API", version="1.0.0")
 
 # CORS 설정
