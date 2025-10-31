@@ -14,13 +14,27 @@ load_dotenv()
 app = FastAPI(title="Image Upload API", version="1.0.0")
 
 # CORS 설정
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:8080").split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:8080")
+# "*"이면 모든 오리진 허용, 아니면 쉼표로 구분된 목록 사용
+if cors_origins_str.strip() == "*":
+    # 모든 오리진 허용 (개발 환경용)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r".*",  # 모든 오리진 허용
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # 특정 오리진만 허용
+    allow_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allow_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # S3 클라이언트 설정
 # AWS S3 사용 시: S3_ENDPOINT_URL을 비워두거나 None으로 설정
