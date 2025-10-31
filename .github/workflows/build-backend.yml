@@ -1,17 +1,18 @@
-name: Build and Push to Harbor
+name: Build and Push Backend API
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
     branches: [ main ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository }}-backend
 
 jobs:
-  build-and-push:
+  build-and-push: 
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,7 +39,6 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=branch
-          type=ref,event=pr
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
 
@@ -65,7 +65,7 @@ jobs:
       id: build
       uses: docker/build-push-action@v5
       with:
-        context: .
+        context: ./backend
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -73,7 +73,7 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Output image digest
-      run: echo ${{ steps.build.outputs.digest }}
+      run: echo "Backend image digest: ${{ steps.build.outputs.digest }}"
 
     - name: Trigger ops repository update
       if: github.ref == 'refs/heads/main'
@@ -81,7 +81,7 @@ jobs:
       with:
         token: ${{ secrets.OPS_REPO_TOKEN }}
         repository: hyjk826/testweb-ops
-        event-type: image-updated-web
+        event-type: image-updated-backend
         client-payload: |
           {
             "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}",
@@ -89,5 +89,5 @@ jobs:
             "digest": "${{ steps.build.outputs.digest }}",
             "commit_sha": "${{ github.sha }}",
             "ref": "${{ github.ref }}",
-            "image_type": "web"
+            "image_type": "backend"
           }
