@@ -61,13 +61,29 @@ jobs:
           echo "has_custom_tag=false" >> $GITHUB_OUTPUT
         fi
 
+    - name: Prepare image tags
+      id: image_tags
+      run: |
+        BASE_TAGS="${{ steps.meta.outputs.tags }}"
+        if [ "${{ steps.commit_tag.outputs.has_custom_tag }}" = "true" ]; then
+          CUSTOM_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.commit_tag.outputs.custom_tag }}"
+          echo "all_tags<<EOF" >> $GITHUB_OUTPUT
+          echo "$BASE_TAGS" >> $GITHUB_OUTPUT
+          echo "$CUSTOM_TAG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "all_tags<<EOF" >> $GITHUB_OUTPUT
+          echo "$BASE_TAGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
     - name: Build and push Docker image
       id: build
       uses: docker/build-push-action@v5
       with:
         context: .
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
+        tags: ${{ steps.image_tags.outputs.all_tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
